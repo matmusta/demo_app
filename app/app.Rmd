@@ -16,6 +16,7 @@ library(plotly)
 library(shiny.semantic)
 library(geosphere)
 library(shinydashboard)
+library(lubridate)
 
 # settings$packages <- list("tidyverse", "leaflet", "htmltools", "htmlwidgets",
 #                           "lubridate", "plotly", "shiny.semantic", "geosphere",
