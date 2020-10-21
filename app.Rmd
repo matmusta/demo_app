@@ -1,0 +1,120 @@
+---
+title: "Demo App"
+author: "ms"
+date: "`r Sys.time()`"
+output: flexdashboard::flex_dashboard
+runtime: shiny
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F, message = F)
+settings <- list()
+settings$packages <- list("tidyverse", "leaflet", "htmltools", "htmlwidgets",
+                          "lubridate", "plotly", "shiny.semantic", "geosphere",
+                          "shinydashboard")
+lapply(settings$packages, library, character.only = TRUE)
+options(scipen = 999999,semantic.themes = TRUE)
+
+# read functions
+source("funs.r")
+
+# read data
+# data is split and reduced in order to speed up the app
+settings$ids <- "data/dictionary_ships.csv"
+settings$fileName <- "data/ships_lite.csv" 
+data <- list()
+data$ships <- read.csv(settings$ids,
+                     stringsAsFactors = F) %>% 
+  janitor::clean_names()
+
+data$raw <- read.csv(settings$fileName,
+                     stringsAsFactors = F) %>%
+  janitor::clean_names()
+
+choices_start <- data$ships %>% 
+  filter(ship_type == "Unspecified") %>% 
+  select(shipname) %>% 
+  distinct() %>% 
+  pull()
+```
+
+Introduction {data-icon="fa-atlas"}
+=====================================     
+
+Column 4{data-width=100}
+-------------------------------------
+
+```{r menu}
+selectizeInput("ship_type","Select type of ship:", 
+            choices= sort(unique(data$ships$ship_type)), 
+            selected = "Unspecified")
+
+selectizeInput("ship_name","Select ship:", 
+            choices = choices_start, 
+            selected = "KONTROLER 20")
+
+shipNames <- reactive({
+ data$ships %>% 
+    filter(ship_type == input$ship_type) %>% 
+    as.data.frame()
+})
+
+observeEvent(
+  input$ship_type,
+  updateSelectizeInput(session, "ship_name",
+                       label = paste("Available", input$ship_type, "ships."),
+                       choices = shipNames()$shipname,
+                       selected = shipNames()$shipname)
+  )
+```
+<br>
+Application created for recruitment purpose. See the task [here](https://docs.google.com/document/d/1PdTiUiGdV5n6Gb_e2Ac9pc36olXvhKfVWSbP-JxXem4/edit)
+
+Github repository [link](https://github.com/matmusta/demo_app.git)
+
+Have a nice day!
+
+
+Column 4 
+-------------------------------------
+
+
+* On the left hand side you can find **menu** where you can select the vessel.
+
+* Below there is a **summary table** which updates with each vessel selection. The table describes the trip which includes the longest sailed distance between two consecutive observations. The distance is calculated with the [Haversine method](https://en.wikipedia.org/wiki/Haversine_formula#:~:text=The%20haversine%20formula%20determines%20the,and%20angles%20of%20spherical%20triangles) that assumes a spherical earth.
+
+* The **Map** is on the second tab.
+
+
+
+```{r summaryTable}
+renderTable({
+    data <- shipFun(name = input$ship_name,
+                  table = data$raw)
+    
+  formattable::formattable(data$stats %>% 
+                             mutate(`Ship name` = input$ship_name,
+                                    `Ship type` = input$ship_type) %>% 
+                             select(`Ship name`, `Ship type`, everything()))
+})
+```
+
+
+Map {data-icon="fa-atlas"}
+=====================================     
+
+```{r map}
+renderLeaflet({
+  data <- shipFun(name = input$ship_name,
+                  table = data$raw)
+
+  map <- data$result %>% 
+    filter(datetime == max(datetime) | datetime == min(datetime))
+  leaflet() %>% 
+  addProviderTiles(provider = providers$Stamen.Watercolor) %>% 
+  addMarkers(lng = map$lon, 
+                   lat = map$lat,
+                   label = lapply(map$label, HTML))
+})
+```
+
+
