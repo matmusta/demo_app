@@ -7,20 +7,33 @@ runtime: shiny
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = F, warning = F, message = F)
-settings <- list()
-settings$packages <- list("tidyverse", "leaflet", "htmltools", "htmlwidgets",
-                          "lubridate", "plotly", "shiny.semantic", "geosphere",
-                          "shinydashboard")
-lapply(settings$packages, library, character.only = TRUE)
-options(scipen = 999999,semantic.themes = TRUE)
+
+library(tidyverse)
+library(leaflet)
+library(htmltools)
+library(htmlwidgets)
+library(plotly)
+library(shiny.semantic)
+library(geosphere)
+library(shinydashboard)
+
+# settings$packages <- list("tidyverse", "leaflet", "htmltools", "htmlwidgets",
+#                           "lubridate", "plotly", "shiny.semantic", "geosphere",
+#                           "shinydashboard")
+# lapply(settings$packages, library, character.only = TRUE)
+
+options(scipen = 999999, 
+        semantic.themes = TRUE)
 
 # read functions
 source("funs.r")
 
 # read data
-# data is split and reduced in order to speed up the app
+settings <- list()
 settings$ids <- "data/dictionary_ships.csv"
 settings$fileName <- "data/ships_lite.csv" 
+
+# data is split and reduced in order to speed up the app
 data <- list()
 data$ships <- read.csv(settings$ids,
                      stringsAsFactors = F) %>% 
@@ -30,6 +43,7 @@ data$raw <- read.csv(settings$fileName,
                      stringsAsFactors = F) %>%
   janitor::clean_names()
 
+# prepare starting choices
 choices_start <- data$ships %>% 
   filter(ship_type == "Unspecified") %>% 
   select(shipname) %>% 
