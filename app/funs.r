@@ -105,7 +105,8 @@ shipFun <- function(name = name, table = data$raw){
     tt = round(difftime(max(result$datetime), min(result$datetime), units = "hours"),2),
     ms = result %>% 
       filter(is_parked != 1) %>% 
-      summarise(ms = round(mean(speed, na.rm = T),2))
+      summarise(ms = round(mean(speed, na.rm = T),2),
+                ms = ifelse(is.na(ms), 0, ms))
   ) %>% 
     rename(`Total distance [meters]` = td,
            `Total time [hours]` = tt,
